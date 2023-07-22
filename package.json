@@ -10,7 +10,8 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "vue": "^3.3.4"
+    "vue": "^3.3.4",
+    "vue3-circle-progress-bar": "^1.0.9"
   },
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.2.0",

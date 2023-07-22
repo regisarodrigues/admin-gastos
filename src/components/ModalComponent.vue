@@ -1,6 +1,6 @@
 <script setup>
 import fecharModal from '@/assets/img/cerrar.svg';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import AlertaComponet from './AlertaComponent.vue';
 
 const emit = defineEmits([
@@ -8,7 +8,8 @@ const emit = defineEmits([
   'salvar-gasto',
   'update:name',
   'update:valor',
-  'update:categoria'
+  'update:categoria',
+  'excluir-gasto'
 ]);
 
 const err = ref('');
@@ -33,12 +34,17 @@ const props = defineProps({
   disponivel: {
     type: Number,
     required: true
+  },
+  id: {
+    type: [String, null],
+    required: true
   }
 });
 
 const adicionarGasto = () => {
+  const old = props.valor;
   // validar que não tenha campo vazio
-  const { name, valor, categoria, disponivel } = props;
+  const { name, valor, categoria, disponivel, id } = props;
   if ([name, valor, categoria].includes('')) {
     err.value = 'Todos os campos são obrigatório(s).';
     setTimeout(() => {
@@ -57,15 +63,29 @@ const adicionarGasto = () => {
   }
 
   // validar que usuario nao gaste mais que valor disponivel
-  if (valor > disponivel) {
-    err.value = 'Valor maior que o disponivel.';
-    setTimeout(() => {
-      err.value = '';
-    }, 3000);
-    return;
+  if (id) {
+    if (valor > old + disponivel) {
+      err.value = 'Valor maior que o disponivel.';
+      setTimeout(() => {
+        err.value = '';
+      }, 3000);
+      return;
+    }
+  } else {
+    if (valor > disponivel) {
+      err.value = 'Valor maior que o disponivel.';
+      setTimeout(() => {
+        err.value = '';
+      }, 3000);
+      return;
+    }
   }
   emit('salvar-gasto');
 };
+
+const isEdit = computed(() => {
+  return props.id;
+});
 </script>
 
 <template>
@@ -75,7 +95,7 @@ const adicionarGasto = () => {
     </div>
     <div class="conteudo conteudo-form" :class="[modal.animar ? 'animar' : 'fechar']">
       <form class="novo-gasto" autocomplete="off" @submit.prevent="adicionarGasto">
-        <legend>Adicionar Gastos</legend>
+        <legend>{{ isEdit ? 'Alterar Gasto' : 'Adicionar Gastos' }}</legend>
 
         <AlertaComponet v-if="err">{{ err }} </AlertaComponet>
 
@@ -117,8 +137,11 @@ const adicionarGasto = () => {
             <option value="assinatura">Assinaturas</option>
           </select>
         </div>
-        <input type="submit" value="Adicionar Gasto" />
+        <input type="submit" :value="[isEdit ? 'Salvar' : 'Adicionar Gasto']" />
       </form>
+      <button class="btn-excluir" v-if="isEdit" @click="$emit('excluir-gasto')">
+        Excluir Gasto
+      </button>
     </div>
   </div>
 </template>
@@ -131,17 +154,18 @@ const adicionarGasto = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  .fechar-modal {
-    position: absolute;
-    right: 3rem;
-    top: 3rem;
+}
+.fechar-modal {
+  position: absolute;
+  right: 3rem;
+  top: 3rem;
 
-    img {
-      width: 3rem;
-      cursor: pointer;
-    }
+  img {
+    width: 3rem;
+    cursor: pointer;
   }
 }
+
 .conteudo-form {
   transition: all;
   transition-duration: 300ms;
@@ -155,7 +179,7 @@ const adicionarGasto = () => {
   opacity: 0;
 }
 .novo-gasto {
-  margin: 10rem auto 0 auto;
+  margin: 5rem auto 0 auto;
   display: grid;
   gap: 2rem;
 
@@ -190,5 +214,17 @@ const adicionarGasto = () => {
     font-weight: 700;
     cursor: pointer;
   }
+}
+.btn-excluir {
+  border: none;
+  border-radius: 1rem;
+  padding: 1rem;
+  width: 100%;
+  background-color: #ef4444;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--branco);
+  margin-top: 5rem;
+  cursor: pointer;
 }
 </style>

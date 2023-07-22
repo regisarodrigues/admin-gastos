@@ -1,12 +1,13 @@
 <script setup>
 import iconNovoGasto from '@/assets/img/nuevo-gasto.svg';
 import ControleMontante from '@/components/ControleMontante.vue';
+import FiltroComponent from '@/components/FiltroComponent.vue';
 import GastoComponent from '@/components/GastoComponent.vue';
 import ModalComponent from '@/components/ModalComponent.vue';
 import MontanteComponet from '@/components/MontanteComponent.vue';
 import { gerarId } from '@/helpers';
 
-import { reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 const modal = reactive({
   mostar: false,
@@ -17,6 +18,7 @@ const montante = ref(0);
 const disponivel = ref(0);
 const valorGasto = ref(0);
 const gastos = ref([]);
+const filtro = ref('');
 
 const gasto = reactive({
   name: '',
@@ -33,6 +35,8 @@ watch(
     valorGasto.value = totalGasto;
 
     disponivel.value = montante.value - valorGasto.value;
+
+    localStorage.setItem('gastos', JSON.stringify(gastos.value));
   },
   { deep: true }
 );
@@ -46,6 +50,25 @@ watch(
   },
   { deep: true }
 );
+
+watch(montante, () => {
+  localStorage.setItem('montante', montante.value);
+});
+
+onMounted(() => {
+  const montanteStorage = localStorage.getItem('montante');
+
+  if (montanteStorage) {
+    montante.value = Number(montanteStorage);
+    disponivel.value = Number(montanteStorage);
+  }
+
+  const gastosStorage = localStorage.getItem('gastos');
+
+  if (gastosStorage) {
+    gastos.value = JSON.parse(gastosStorage);
+  }
+});
 
 const definirMontante = (quantidade) => {
   montante.value = quantidade;
@@ -93,10 +116,34 @@ const reiniciarStateGasto = () => {
     data: Date.now()
   });
 };
+
 const selecionarGasto = (id) => {
   const editarGasto = gastos.value.filter((gasto) => gasto.id === id)[0];
   Object.assign(gasto, editarGasto);
   mostrarModal();
+};
+
+const excluirGasto = () => {
+  if (confirm('Excluir?')) {
+    gastos.value = gastos.value.filter((gastoState) => gastoState.id !== gasto.id);
+
+    ocultarModal();
+  }
+};
+
+const gastosFiltrado = computed(() => {
+  if (filtro.value) {
+    return gastos.value.filter((gasto) => gasto.categoria === filtro.value);
+  }
+
+  return gastos.value;
+});
+
+const resetApp = () => {
+  if (confirm('Deseja reiniciar o aplicativo?')) {
+    gastos.value = [];
+    montante.value = 0;
+  }
 };
 </script>
 
@@ -111,16 +158,19 @@ const selecionarGasto = (id) => {
           v-else
           :montante="montante"
           :disponivel="disponivel"
-          :valorGasto="valorGasto"
+          :valor-gasto="valorGasto"
+          @reset-app="resetApp"
         />
       </div>
     </header>
     <main v-if="montante > 0">
+      <FiltroComponent v-model:filtro="filtro" />
+
       <div class="lista-gastos conteudo">
-        <h2>{{ gastos.length > 0 ? 'Gastos' : 'Não tem gastos.' }}</h2>
+        <h2>{{ gastosFiltrado.length > 0 ? 'Gastos' : 'Não tem gastos.' }}</h2>
 
         <GastoComponent
-          v-for="gasto in gastos"
+          v-for="gasto in gastosFiltrado"
           :key="gasto.id"
           :gasto="gasto"
           @selecionar-gasto="selecionarGasto"
@@ -135,8 +185,10 @@ const selecionarGasto = (id) => {
         v-if="modal.mostar"
         @ocultar-modal="ocultarModal"
         @salvar-gasto="salvarGasto"
+        @excluir-gasto="excluirGasto"
         :modal="modal"
         :disponivel="disponivel"
+        :id="gasto.id"
         v-model:name="gasto.name"
         v-model:valor="gasto.valor"
         v-model:categoria="gasto.categoria"
@@ -226,10 +278,16 @@ header h1 {
 }
 
 .lista-gastos {
-  margin-top: 10rem;
+  margin-top: 5rem;
   font-m h2 {
     font-weight: 900;
     color: var(--cinza-escuro);
   }
+}
+
+.vue3-circular-progressbar .current-counter[data-v-96b27bec] {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #64748b;
 }
 </style>

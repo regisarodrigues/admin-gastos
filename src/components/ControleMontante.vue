@@ -1,6 +1,12 @@
 <script setup>
-import imagem from '@/assets/img/grafico.jpg';
+import CircleProgress from 'vue3-circle-progress-bar';
+import 'vue3-circle-progress-bar/dist/circle-progress-bar.css';
+
 import { formatarValor } from '@/helpers';
+import { computed } from 'vue';
+
+defineEmits(['reset-app']);
+
 const props = defineProps({
   montante: {
     type: Number,
@@ -15,15 +21,29 @@ const props = defineProps({
     required: true
   }
 });
+
+const porcentagem = computed(() => {
+  return parseInt(((props.montante - props.disponivel) / props.montante) * 100);
+});
 </script>
 
 <template>
   <div class="duas-colunas">
     <dir class="conteudo-grafico">
-      <img :src="imagem" alt="" />
+      <CircleProgress
+        :percent="porcentagem"
+        :size="200"
+        :border-width="25"
+        :border-bg-width="25"
+        fill-color="#3b82f6"
+        empty-color="#e1e1e1"
+        show-percent="true"
+        unit="%"
+      />
     </dir>
+
     <div class="conteudo-montante">
-      <button class="resetar-app">Resetar App</button>
+      <button class="resetar-app" @click="$emit('reset-app')">Resetar App</button>
       <p><span>Valor: </span>{{ formatarValor(props.montante) }}</p>
       <p><span>Valor Disponivel: </span>{{ formatarValor(props.disponivel) }}</p>
       <p><span>Valor Gasto: </span>{{ formatarValor(props.valorGasto) }}</p>
